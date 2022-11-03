@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "asr",
+            "type": "python",
+            "request": "launch",
+            "program": "wenet/bin/recognize.py",
+            "env": {"PYTHONPATH": "/data/joe/asr/e2e/sincnet",
+                    "CUDA_VISIBLE_DEVICES": "0"},
+            "console": "integratedTerminal",
+            "cwd": "/data/joe/asr/e2e/sincnet",
+            "args":
+               [
+                "--gpu", "7",
+                "--config", "exp/conformer/train.yaml",
+                "--data_type","raw",
+                "--test_data","data/test/data.list",
+                "--checkpoint","exp/conformer/avg_60.pt",
+                "--beam_size","10",
+                "--batch_size", "1",
+                "--dict", "data/dict/lang_char.txt" ,
+                "--ctc_weight", "0.5",
+                "--reverse_weight", "0.5",
+                "--result_file", "exp/conformer/test_ctc_greedy_search//text",
+               ]
+        }
+    ]
+}

@@ -9,6 +9,8 @@ from typing import Tuple
 
 import torch
 from wenet.transformer.sincnet import SincConv_fast
+from matplotlib import pyplot as plt
+import numpy as np
 
 
 class BaseSubsampling(torch.nn.Module):
@@ -249,7 +251,7 @@ class LogCompression(torch.nn.Module):
 
 class SincSubsampling4(BaseSubsampling):
     """Convolutional 2D subsampling (to 1/4 length).
-
+Lightweight End-to-End Speech Recognition from Raw Audio Data Using
     Args:
         idim (int): Input dimension.
         odim (int): Output dimension.
@@ -305,13 +307,12 @@ class SincSubsampling4(BaseSubsampling):
             torch.Tensor: positional encoding
 
         """
-        x = x[:, :, 1:] - x[:, :, :-1] * 0.97
+        x = x[:, 1:, :] - x[:, :-1, :] * 0.97
         x = x.transpose(1, 2) # (b, n, 1) -> (b, 1, n)
         x = self.sinc(x)      # (b, 80, t)
-        # x = self.LogCompression(x)
         x = x.transpose(1, 2) # (b, t=n, f=80)
-        #x = self.dropout(self.norm_conv(x))
-        # x = self.layer_norm(x)
+        # x_np = x[0].cpu().detach().numpy()
+        # np.savetxt('x.csv', x_np, fmt='%.3f', delimiter=',')
         x = x.unsqueeze(1)  # (b, c=1, t, f)
         x = self.conv(x)
         b, c, t, f = x.size()
