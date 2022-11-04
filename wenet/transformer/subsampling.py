@@ -262,9 +262,12 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
                  pos_enc_class: torch.nn.Module):
         """Construct an Conv2dSubsampling4 object."""
         super().__init__()
+        self.dither = 0.1
         self.sinc = SincConv_fast(out_channels=80, kernel_size=251, sample_rate=16000)
-        self.LogCompression = LogCompression()
-        #self.norm_conv = torch.nn.LayerNorm(80, eps=1e-5)
+        # self.sinc = torch.nn.Conv1d(in_channels=1, out_channels=80, kernel_size=251, stride=1, padding=125)
+        # self.LogCompression = LogCompression()
+        # self.norm = torch.nn.BatchNorm1d(80)
+        self.norm = torch.nn.LayerNorm(80)
         #self.sinc = torch.nn.Conv1d(1, 80, kernel_size=251, stride=1, padding=125)
         #self.layer_norm = torch.nn.LayerNorm(80, eps=1e-5)
         #self.act = torch.nn.ReLU()
@@ -311,6 +314,7 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         x = x.transpose(1, 2) # (b, n, 1) -> (b, 1, n)
         x = self.sinc(x)      # (b, 80, t)
         x = x.transpose(1, 2) # (b, t=n, f=80)
+        x = self.norm(x)
         # x_np = x[0].cpu().detach().numpy()
         # np.savetxt('x.csv', x_np, fmt='%.3f', delimiter=',')
         x = x.unsqueeze(1)  # (b, c=1, t, f)
@@ -318,5 +322,5 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         b, c, t, f = x.size()
         x = self.out(x.transpose(1, 2).contiguous().view(b, t, c * f))
         x, pos_emb = self.pos_enc(x, offset)
-        #return x, pos_emb, x_mask[:, :, :-250:160][:, :, :-2:2][:, :, :-2:2]
+        # return x, pos_emb, x_mask[:, :, :-250:160][:, :, :-2:2][:, :, :-2:2]
         return x, pos_emb, x_mask[:, :, :-251:160][:, :, :-2:2][:, :, :-2:2]
