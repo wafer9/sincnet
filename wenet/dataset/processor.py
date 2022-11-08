@@ -263,8 +263,6 @@ def speed_perturb(data, speeds=None):
             wav, _ = torchaudio.sox_effects.apply_effects_tensor(
                 waveform, sample_rate,
                 [['speed', str(speed)], ['rate', str(sample_rate)]])
-            std_var = torch.sqrt(torch.var(wav))
-            wav += torch.randn(wav.shape) * std_var.item() * 0.1
             sample['wav'] = wav
 
         yield sample

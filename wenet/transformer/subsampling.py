@@ -267,15 +267,13 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         # self.sinc = torch.nn.Conv1d(in_channels=1, out_channels=80, kernel_size=251, stride=1, padding=125)
         # self.LogCompression = LogCompression()
         # self.norm = torch.nn.BatchNorm1d(80)
-        self.norm = torch.nn.LayerNorm(80)
+        self.pool = torch.nn.AvgPool1d(160)
         #self.sinc = torch.nn.Conv1d(1, 80, kernel_size=251, stride=1, padding=125)
         #self.layer_norm = torch.nn.LayerNorm(80, eps=1e-5)
         #self.act = torch.nn.ReLU()
         #self.dropout = torch.nn.Dropout(dropout_rate)
         self.conv = torch.nn.Sequential(
-            torch.nn.Conv2d(1, 64, kernel_size=(251,3), stride=(160,1), padding=(0,1)),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(64, odim, 3, 2),
+            torch.nn.Conv2d(1, odim, 3, 2),
             torch.nn.ReLU(),
             torch.nn.Conv2d(odim, odim, 3, 2),
             torch.nn.ReLU(),
@@ -288,6 +286,7 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         self.subsampling_rate = 4
         # 6 = (3 - 1) * 1 + (3 - 1) * 2
         self.right_context = 6
+        self.eps = torch.tensor(torch.finfo(torch.float).eps)
 
     def forward(
             self,
@@ -312,9 +311,10 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         """
         x = x[:, 1:, :] - x[:, :-1, :] * 0.97
         x = x.transpose(1, 2) # (b, n, 1) -> (b, 1, n)
-        x = self.sinc(x)      # (b, 80, t)
+        x = torch.abs(self.sinc(x))      # (b, 80, t)
+        x = self.pool(x)
+        x = torch.max(x, self.eps).log()
         x = x.transpose(1, 2) # (b, t=n, f=80)
-        x = self.norm(x)
         # x_np = x[0].cpu().detach().numpy()
         # np.savetxt('x.csv', x_np, fmt='%.3f', delimiter=',')
         x = x.unsqueeze(1)  # (b, c=1, t, f)
@@ -323,4 +323,4 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         x = self.out(x.transpose(1, 2).contiguous().view(b, t, c * f))
         x, pos_emb = self.pos_enc(x, offset)
         # return x, pos_emb, x_mask[:, :, :-250:160][:, :, :-2:2][:, :, :-2:2]
-        return x, pos_emb, x_mask[:, :, :-251:160][:, :, :-2:2][:, :, :-2:2]
+        return x, pos_emb, x_mask[:, :, :-160:160][:, :, :-2:2][:, :, :-2:2]
