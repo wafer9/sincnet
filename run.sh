@@ -23,7 +23,7 @@ num_nodes=1
 # on the second machine, and so on.
 node_rank=0
 # data
-data=/nfs-speech-cfs/BACKUP/asr/cn/aishell_set
+data=/data/asr/wangzhou/data/aishell_set
 data_url=www.openslr.org/resources/33
 
 nj=16
@@ -45,7 +45,7 @@ train_set=train
 # 6. conf/train_u2++_transformer.yaml: U2++ transformer
 train_config=conf/train_conformer_sinc.yaml
 cmvn=true
-dir=exp/conformer1
+dir=exp/conformer
 checkpoint=
 
 # use average_checkpoint will get better result
@@ -148,7 +148,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
       --ddp.world_size $world_size \
       --ddp.rank $rank \
       --ddp.dist_backend $dist_backend \
-      --num_workers 16 \
+      --num_workers 1 \
       --pin_memory
   } &
   done
