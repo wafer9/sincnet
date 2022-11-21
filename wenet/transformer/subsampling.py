@@ -9,8 +9,7 @@ from typing import Tuple
 
 import torch
 from wenet.transformer.sincnet import SincConv_fast
-from matplotlib import pyplot as plt
-import numpy as np
+from wenet.transformer.specaug import SpecAug
 
 
 class BaseSubsampling(torch.nn.Module):
@@ -259,7 +258,8 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
 
     """
     def __init__(self, idim: int, odim: int, dropout_rate: float,
-                 pos_enc_class: torch.nn.Module):
+                 pos_enc_class: torch.nn.Module,
+                 global_cmvn: torch.nn.Module = None,):
         """Construct an Conv2dSubsampling4 object."""
         super().__init__()
         self.dither = 0.1
@@ -287,6 +287,8 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         # 6 = (3 - 1) * 1 + (3 - 1) * 2
         self.right_context = 6
         self.eps = torch.tensor(torch.finfo(torch.float).eps)
+        self.SpecAug = SpecAug()
+        self.global_cmvn = global_cmvn
 
     def forward(
             self,
@@ -315,8 +317,14 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         x = self.pool(x)
         x = torch.max(x, self.eps).log()
         x = x.transpose(1, 2) # (b, t=n, f=80)
-        # x_np = x[0].cpu().detach().numpy()
-        # np.savetxt('x.csv', x_np, fmt='%.3f', delimiter=',')
+
+        # spec augment
+        if self.training:
+            x = self.SpecAug(x)
+        # cmvn
+        if self.global_cmvn is not None:
+            x = self.global_cmvn(x)
+
         x = x.unsqueeze(1)  # (b, c=1, t, f)
         x = self.conv(x)
         b, c, t, f = x.size()

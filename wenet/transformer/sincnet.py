@@ -94,25 +94,6 @@ class SincConv_fast(nn.Module):
         n = (self.kernel_size - 1) / 2.0
         self.n_ = 2*math.pi*torch.arange(-n, 0).view(1, -1) / self.sample_rate # Due to symmetry, I only need half of the time axes
 
- 
-    def forward(self, waveforms):
-        """
-        Parameters
-        ----------
-        waveforms : `torch.Tensor` (batch_size, 1, n_samples)
-            Batch of waveforms.
-        Returns
-        -------
-        features : `torch.Tensor` (batch_size, out_channels, n_samples_out)
-            Batch of sinc filters activations.
-        """
-
-        self.n_ = self.n_.to(waveforms.device)
-
-        self.window_ = self.window_.to(waveforms.device)
-        self.low_hz_ = self.low_hz_.to(waveforms.device)
-        self.band_hz_ = self.band_hz_.to(waveforms.device)
-
         low = self.min_low_hz  + torch.abs(self.low_hz_)
         
         high = torch.clamp(low + self.min_band_hz + torch.abs(self.band_hz_),self.min_low_hz,self.sample_rate/2)
@@ -130,21 +111,24 @@ class SincConv_fast(nn.Module):
         
         band_pass=torch.cat([band_pass_left,band_pass_center,band_pass_right],dim=1)
 
-        
         band_pass = band_pass / (2*band[:,None])
-        
 
         self.filters = (band_pass).view(self.out_channels, 1, self.kernel_size)
-        '''
-        if self.training:
-            num_f_mask = 2
-            max_f = 30
-            for i in range(num_f_mask):
-                start = random.randint(0, self.out_channels - 1)
-                length = random.randint(1, max_f)
-                end = min(self.out_channels, start + length)
-                self.filters[start:end, :, :] = 0
-        '''
+ 
+
+    def forward(self, waveforms):
+        """
+        Parameters
+        ----------
+        waveforms : `torch.Tensor` (batch_size, 1, n_samples)
+            Batch of waveforms.
+        Returns
+        -------
+        features : `torch.Tensor` (batch_size, out_channels, n_samples_out)
+            Batch of sinc filters activations.
+        """
+        self.filters = self.filters.to(waveforms.device)
+
         return F.conv1d(waveforms, self.filters, stride=self.stride,
                         padding=self.padding, dilation=self.dilation,
                          bias=None, groups=1) 

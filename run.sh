@@ -45,7 +45,7 @@ train_set=train
 # 6. conf/train_u2++_transformer.yaml: U2++ transformer
 train_config=conf/train_conformer_sinc.yaml
 cmvn=true
-dir=exp/conformer
+dir=exp/conformer1
 checkpoint=
 
 # use average_checkpoint will get better result
@@ -149,6 +149,7 @@ if [ ${stage} -le 4 ] && [ ${stop_stage} -ge 4 ]; then
       --ddp.rank $rank \
       --ddp.dist_backend $dist_backend \
       --num_workers 1 \
+      $cmvn_opts \
       --pin_memory
   } &
   done

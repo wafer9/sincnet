@@ -11,6 +11,7 @@ import torch
 import torchaudio
 import torchaudio.compliance.kaldi as kaldi
 from torch.utils.data import Dataset, DataLoader
+from wenet.transformer.sincnet import SincConv_fast
 
 torchaudio.set_audio_backend("sox_io")
 
@@ -22,6 +23,9 @@ class CollateFunc(object):
     def __init__(self, feat_dim, resample_rate):
         self.feat_dim = feat_dim
         self.resample_rate = resample_rate
+        self.sinc = SincConv_fast(out_channels=80, kernel_size=251, stride=4, sample_rate=resample_rate)
+        self.pool = torch.nn.AvgPool1d(40)
+        self.eps = torch.tensor(torch.finfo(torch.float).eps)
         pass
 
     def __call__(self, batch):
@@ -52,11 +56,19 @@ class CollateFunc(object):
                 waveform = torchaudio.transforms.Resample(
                     orig_freq=sample_rate, new_freq=resample_rate)(waveform)
 
-            mat = kaldi.fbank(waveform,
-                              num_mel_bins=self.feat_dim,
-                              dither=0.0,
-                              energy_floor=0.0,
-                              sample_frequency=resample_rate)
+            waveform = waveform[:, 1:] - waveform[:, :-1] * 0.97
+            x = waveform.unsqueeze(0) # (b, 1, t)
+            with torch.no_grad():
+                x = torch.abs(self.sinc(x))      # (b, 80, t)
+                x = self.pool(x)
+            x = torch.max(x, self.eps).log()  # (b, 80, t)
+            mat = x.transpose(1, 2).squeeze(0) # (t, f=80)
+
+            # mat = kaldi.fbank(waveform,
+            #                   num_mel_bins=self.feat_dim,
+            #                   dither=0.0,
+            #                   energy_floor=0.0,
+            #                   sample_frequency=resample_rate)
             mean_stat += torch.sum(mat, axis=0)
             var_stat += torch.sum(torch.square(mat), axis=0)
             number += mat.shape[0]

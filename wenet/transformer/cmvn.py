@@ -30,8 +30,8 @@ class GlobalCMVN(torch.nn.Module):
         assert mean.shape == istd.shape
         self.norm_var = norm_var
         # The buffer can be accessed from this module using self.mean
-        self.register_buffer("mean", mean)
-        self.register_buffer("istd", istd)
+        self.mean = torch.nn.Parameter(mean)
+        self.istd = torch.nn.Parameter(istd)
 
     def forward(self, x: torch.Tensor):
         """
