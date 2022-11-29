@@ -27,6 +27,9 @@ from torch.nn.utils.rnn import pad_sequence
 
 AUDIO_FORMAT_SETS = set(['flac', 'mp3', 'm4a', 'ogg', 'opus', 'wav', 'wma'])
 
+MAX_GAUSS_LEN = 10 * 3600 * 16000 # 10h * 3600s/h * 16000 f/s
+rand_gauss = torch.randn((1, MAX_GAUSS_LEN)) 
+
 
 def url_opener(data):
     """ Give url or local file, return file descriptor
@@ -222,7 +225,7 @@ def resample(data, resample_rate=16000):
         yield sample
 
 
-def transpose(data):
+def transpose(data, dither=0.1):
     """ Resample data.
         Inplace operation.
 
@@ -236,6 +239,12 @@ def transpose(data):
     for sample in data:
         assert 'wav' in sample
         waveform = sample['wav']
+        waveform = waveform * (1 << 15)
+        if dither != 0.0:
+            wav_length = waveform.shape[1]
+            start = random.randint(0, MAX_GAUSS_LEN - wav_length)
+            gauss = rand_gauss[:, start: start + wav_length]
+            waveform = waveform + gauss * dither
         sample['feat'] = waveform.transpose(0, 1)
         yield sample
 

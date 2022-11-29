@@ -79,10 +79,10 @@ class SincConv_fast(nn.Module):
         
 
         # filter lower frequency (out_channels, 1)
-        self.low_hz_ = torch.Tensor(hz[:-1]).view(-1, 1)
+        self.low_hz_ = nn.Parameter(torch.Tensor(hz[:-1]).view(-1, 1))
 
         # filter frequency band (out_channels, 1)
-        self.band_hz_ = torch.Tensor(np.diff(hz)).view(-1, 1)
+        self.band_hz_ = nn.Parameter(torch.Tensor(np.diff(hz)).view(-1, 1))
 
         # Hamming window
         #self.window_ = torch.hamming_window(self.kernel_size)
@@ -110,8 +110,6 @@ class SincConv_fast(nn.Module):
         self.n_ = self.n_.to(waveforms.device)
 
         self.window_ = self.window_.to(waveforms.device)
-        self.low_hz_ = self.low_hz_.to(waveforms.device)
-        self.band_hz_ = self.band_hz_.to(waveforms.device)
 
         low = self.min_low_hz  + torch.abs(self.low_hz_)
         

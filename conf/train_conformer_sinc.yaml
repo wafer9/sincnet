@@ -36,6 +36,8 @@ model_conf:
 
 dataset_conf:
     feats_type: 'raw'
+    raw_conf:
+        dither: 0.1
     filter_conf:
         max_length: 40960
         min_length: 0
@@ -63,7 +65,7 @@ dataset_conf:
         sort_size: 500  # sort_size should be less than shuffle_size
     batch_conf:
         batch_type: 'static' # static or dynamic
-        batch_size: 16
+        batch_size: 10
         # max_frames_in_batch: 1200000
 
 grad_clip: 5
