@@ -167,8 +167,7 @@ def Dataset(data_type,
         mfcc_conf = conf.get('mfcc_conf', {})
         dataset = Processor(dataset, processor.compute_mfcc, **mfcc_conf)
     elif feats_type == 'raw':
-        raw_conf = conf.get('mfcc_conf', {})
-        dataset = Processor(dataset, processor.transpose, **raw_conf)
+        dataset = Processor(dataset, processor.transpose)
 
     spec_aug = conf.get('spec_aug', True)
     spec_sub = conf.get('spec_sub', False)

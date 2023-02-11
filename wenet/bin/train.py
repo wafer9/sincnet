@@ -151,7 +151,6 @@ def main():
     cv_conf['spec_aug'] = False
     cv_conf['spec_sub'] = False
     cv_conf['shuffle'] = False
-    cv_conf['raw_conf']['dither'] = 0.0
     non_lang_syms = read_non_lang_symbols(args.non_lang_syms)
 
     train_dataset = Dataset(args.data_type, args.train_data, symbol_table,

@@ -225,7 +225,7 @@ def resample(data, resample_rate=16000):
         yield sample
 
 
-def transpose(data, dither=0.1):
+def transpose(data):
     """ Resample data.
         Inplace operation.
 
@@ -239,12 +239,6 @@ def transpose(data, dither=0.1):
     for sample in data:
         assert 'wav' in sample
         waveform = sample['wav']
-        waveform = waveform * (1 << 15)
-        if dither != 0.0:
-            wav_length = waveform.shape[1]
-            start = random.randint(0, MAX_GAUSS_LEN - wav_length)
-            gauss = rand_gauss[:, start: start + wav_length]
-            waveform = waveform + gauss * dither
         sample['feat'] = waveform.transpose(0, 1)
         yield sample
 
@@ -587,7 +581,7 @@ def dynamic_batch(data, max_frames_in_batch=12000):
     for sample in data:
         assert 'feat' in sample
         assert isinstance(sample['feat'], torch.Tensor)
-        new_sample_frames = sample['feat'].size(0)
+        new_sample_frames = sample['feat'].size(0) / 16000.0 * 100
         longest_frames = max(longest_frames, new_sample_frames)
         frames_after_padding = longest_frames * (len(buf) + 1)
         if frames_after_padding > max_frames_in_batch:
