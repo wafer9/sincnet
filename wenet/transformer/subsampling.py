@@ -323,6 +323,4 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         b, c, t, f = x.size()
         x = self.out(x.transpose(1, 2).contiguous().view(b, t, c * f))
         x, pos_emb = self.pos_enc(x, offset)
-        # return x, pos_emb, x_mask[:, :, :-250:160][:, :, :-2:2][:, :, :-2:2]
-        # return x, pos_emb, x_mask[:, :, :-160:160][:, :, :-2:2][:, :, :-2:2]
-        return x, pos_emb, x_mask[:, :, :x.shape[1]]
+        return x, pos_emb, x_mask[:, :, :-1:4][:, :, :-39:40][:, :, :-2:2][:, :, :-2:2]
