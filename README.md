@@ -32,3 +32,15 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 |---------------------------|-------|
 | ctc greedy search avg_30  | 5.10 % N=104765 C=99525 S=5084 D=156 I=106 |
 | ctc greedy search avg_60  | 5.05 % N=104765 C=99575 S=5035 D=155 I=99  |
+
+
+## 2023.02.16
+* Feature info: using sinc feature, sincnet.required_grad = True
+* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
+
+| decoding mode             | CER   |
+|---------------------------|-------|
+| ctc greedy search   avg_30  | 4.98 % N=104765 C=99647 S=4982 D=136 I=101 |
+| ctc greedy search   avg_60  | 4.98 % N=104765 C=99653 S=4971 D=141 I=101 |
+| attention           avg_30  | 5.03 % N=104765 C=99622 S=4979 D=164 I=127 |
+| attention_rescoring avg_30  | 4.71 % N=104765 C=99916 S=4722 D=127 I=87  |

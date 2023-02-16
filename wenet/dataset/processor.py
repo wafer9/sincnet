@@ -24,11 +24,66 @@ import torch
 import torchaudio
 import torchaudio.compliance.kaldi as kaldi
 from torch.nn.utils.rnn import pad_sequence
+import math
 
 AUDIO_FORMAT_SETS = set(['flac', 'mp3', 'm4a', 'ogg', 'opus', 'wav', 'wma'])
 
-MAX_GAUSS_LEN = 10 * 3600 * 16000 # 10h * 3600s/h * 16000 f/s
-rand_gauss = torch.randn((1, MAX_GAUSS_LEN)) 
+
+def to_mel(hz):
+    return 2595 * math.log(1 + hz / 700, 10)
+
+
+def to_hz(mel):
+    return 700 * (10 ** (mel / 2595) - 1)
+
+
+def get_filters(sample_rate=16000,
+                kernel_size=251,
+                low=-1,
+                high=-1):
+    n = (kernel_size - 1) / 2.0
+    idx_left = torch.arange(-n, 0)
+    idx_right = torch.flip(idx_left, dims=[0]) * -1
+
+    nyquist = sample_rate // 2
+    band = torch.tensor(nyquist - (high - low))
+
+    n_ = 2 * math.pi * idx_left.view(1, -1) / sample_rate
+    window_ = 0.54 - 0.46 * torch.cos(2 * math.pi * idx_right / kernel_size)
+
+    band_pass_left = (torch.sin(nyquist * n_) - torch.sin(high * n_) + torch.sin(low * n_))/(n_/2) * window_
+    band_pass_center = 2 * band.view(-1, 1)
+    band_pass_right = torch.flip(band_pass_left, dims=[1])
+
+    band_pass = torch.cat([band_pass_left, band_pass_center, band_pass_right], dim=1)
+    band_pass = band_pass / (2 * band)
+
+    filters = band_pass.view(1, 1, kernel_size)
+    return filters
+
+
+def get_strided(waveform, window_size, window_shift):
+    """ Args:
+            waveform: (num_samples, channel)
+            window_size: int
+            window_shift: int
+        Returns:
+            waveform: (-1, window_size)
+    """
+    waveform = waveform.squeeze(1)
+    num_samples = waveform.size(0)
+    strides = (window_shift * waveform.stride(0), waveform.stride(0))
+
+    pad_size = window_size // 2 - window_shift // 2
+    pad = torch.zeros(pad_size)
+    waveform = torch.cat((pad, waveform, pad), dim=0)
+
+    num_samples = waveform.size(0)
+    m = (num_samples - pad_size * 2) // window_shift
+    sizes = (m, window_size)
+
+    waveform = waveform.as_strided(sizes, strides)
+    return waveform
 
 
 def url_opener(data):
@@ -447,19 +502,36 @@ def spec_aug(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80):
         assert isinstance(x, torch.Tensor)
         y = x.clone().detach()
         max_frames = y.size(0)
-        max_freq = y.size(1)
+
+        sample_rate = 16000
+        kernel_size = 251
+        # freq mask
+        max_freq = sample_rate // 2
+        max_freq_mel = to_mel(max_freq)
+        max_f_mel = int(max_freq_mel / 80 * max_f)
+        for _ in range(num_f_mask):
+            strided_input = get_strided(y,
+                                        window_size=int(0.1 * sample_rate + kernel_size - 1),
+                                        window_shift=int(0.1 * sample_rate))
+            strided_input = strided_input.unsqueeze(1)
+
+            start_mel = random.randint(0, int(max_freq_mel))
+            length_mel = random.randint(1, max_f_mel)
+            end_mel = min(max_freq_mel, start_mel + length_mel)
+            start_hz = to_hz(start_mel)
+            end_hz = to_hz(end_mel)
+            filters = get_filters(sample_rate=sample_rate, kernel_size=kernel_size,
+                                  low=start_hz, high=end_hz)
+            y = torch.nn.functional.conv1d(strided_input, filters)
+            y = y.squeeze(1).view(-1, 1)
+
         # time mask
         for i in range(num_t_mask):
             start = random.randint(0, max_frames - 1)
             length = random.randint(1, max_t)
             end = min(max_frames, start + length)
             y[start:end, :] = 0
-        # freq mask
-        for i in range(num_f_mask):
-            start = random.randint(0, max_freq - 1)
-            length = random.randint(1, max_f)
-            end = min(max_freq, start + length)
-            y[:, start:end] = 0
+
         sample['feat'] = y
         yield sample
 
