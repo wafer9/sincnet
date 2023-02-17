@@ -316,6 +316,8 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         x = self.pool(x)
         x = torch.max(x, self.eps).log()
         x = x.transpose(1, 2) # (b, t=n, f=80)
+        if self.global_cmvn is not None:
+            x = self.global_cmvn(x)
         # x_np = x[0].cpu().detach().numpy()
         # np.savetxt('x.csv', x_np, fmt='%.3f', delimiter=',')
         x = x.unsqueeze(1)  # (b, c=1, t, f)

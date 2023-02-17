@@ -11,6 +11,7 @@ import torch
 import torchaudio
 import torchaudio.compliance.kaldi as kaldi
 from torch.utils.data import Dataset, DataLoader
+from wenet.transformer.sincnet import SincConv_fast
 
 torchaudio.set_audio_backend("sox_io")
 
@@ -22,6 +23,9 @@ class CollateFunc(object):
     def __init__(self, feat_dim, resample_rate):
         self.feat_dim = feat_dim
         self.resample_rate = resample_rate
+        self.sinc = SincConv_fast(out_channels=80, kernel_size=251, stride=4, sample_rate=16000)
+        self.pool = torch.nn.AvgPool1d(40)
+        self.eps = torch.tensor(torch.finfo(torch.float).eps)
         pass
 
     def __call__(self, batch):
@@ -46,20 +50,28 @@ class CollateFunc(object):
             else:
                 waveform, sample_rate = torchaudio.load(item[1])
 
-            waveform = waveform * (1 << 15)
-            if self.resample_rate != 0 and self.resample_rate != sample_rate:
-                resample_rate = self.resample_rate
-                waveform = torchaudio.transforms.Resample(
-                    orig_freq=sample_rate, new_freq=resample_rate)(waveform)
+            x = waveform[:, 1:] - waveform[:, :-1] * 0.97
+            x = x.unsqueeze(0)  # (1, 1, n)
+            
+            x = torch.abs(self.sinc(x))      # (b, 80, t)
+            x = self.pool(x)
+            x = torch.max(x, self.eps).log()
+            mat = x.squeeze(0) # (80, frames)
 
-            mat = kaldi.fbank(waveform,
-                              num_mel_bins=self.feat_dim,
-                              dither=0.0,
-                              energy_floor=0.0,
-                              sample_frequency=resample_rate)
-            mean_stat += torch.sum(mat, axis=0)
-            var_stat += torch.sum(torch.square(mat), axis=0)
-            number += mat.shape[0]
+            # waveform = waveform * (1 << 15)
+            # if self.resample_rate != 0 and self.resample_rate != sample_rate:
+            #     resample_rate = self.resample_rate
+            #     waveform = torchaudio.transforms.Resample(
+            #         orig_freq=sample_rate, new_freq=resample_rate)(waveform)
+
+            # mat = kaldi.fbank(waveform,
+            #                   num_mel_bins=self.feat_dim,
+            #                   dither=0.0,
+            #                   energy_floor=0.0,
+            #                   sample_frequency=resample_rate)
+            mean_stat += torch.sum(mat, axis=1)
+            var_stat += torch.sum(torch.square(mat), axis=1)
+            number += mat.shape[1]
         return number, mean_stat, var_stat
 
 
