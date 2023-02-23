@@ -16,7 +16,7 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 ## 2023.02.11
 
 * Feature info: using sinc feature, sincnet.required_grad = True
-* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs
+* Training info: lr 0.002, batch size 16, 8 gpu, acc_grad 4, 240 epochs
 
 | decoding mode             | CER   |
 |---------------------------|-------|
@@ -26,7 +26,7 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 ## 2023.02.13
 
 * Feature info: using sinc feature, sincnet.required_grad = True
-* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs
+* Training info: lr 0.002, batch size 16, 8 gpu, acc_grad 4, 240 epochs
 
 | decoding mode             | CER   |
 |---------------------------|-------|
@@ -36,7 +36,7 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 
 ## 2023.02.16
 * Feature info: using sinc feature, sincnet.required_grad = True
-* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
+* Training info: lr 0.002, batch size 16, 8 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
 
 | decoding mode             | CER   |
 |---------------------------|-------|
@@ -48,7 +48,7 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 
 ## 2023.02.17
 * Feature info: using sinc feature, sincnet.required_grad = True
-* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
+* Training info: lr 0.002, batch size 16, 8 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
   add global_cmvn
 
 | decoding mode               |         CER                                |
@@ -61,7 +61,7 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 
 ## 2023.02.18
 * Feature info: using sinc feature, sincnet.required_grad = True
-* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
+* Training info: lr 0.002, batch size 16, 8 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
   add global_cmvn,  rm Concat Liner,
 
 | decoding mode               |         CER                                |
@@ -70,3 +70,16 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 | ctc greedy search   avg_60  | 4.97 % N=104765 C=99665 S=4956 D=144 I=103 |
 | attention           avg_30  | 4.98 % N=104765 C=99659 S=4926 D=180 I=112 |
 | attention_rescoring avg_30  | 4.70 % N=104765 C=99935 S=4702 D=128 I=92  |
+
+
+## 2023.02.23
+* Feature info: using sinc feature, sincnet.required_grad = True
+* Training info: lr 0.002, batch size 16, 8 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
+  add global_cmvn,  rm Concat Liner, use stft instead of bandstop-filter
+
+| decoding mode               |         CER                                |
+|-----------------------------|--------------------------------------------|
+| ctc greedy search   avg_30  | 4.93 % N=104765 C=99692 S=4931 D=142 I=97  |
+| ctc greedy search   avg_60  | 4.94 % N=104765 C=99691 S=4932 D=142 I=97  |
+| attention           avg_30  | 4.91 % N=104765 C=99721 S=4849 D=195 I=104 |
+| attention_rescoring avg_30  | 4.60 % N=104765 C=100036 S=4597 D=132 I=85 |

@@ -481,7 +481,7 @@ def tokenize(data,
         yield sample
 
 
-def spec_aug(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80):
+def spec_aug_bk(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80):
     """ Do spec augmentation
         Inplace operation
 
@@ -501,6 +501,7 @@ def spec_aug(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80):
         x = sample['feat']
         assert isinstance(x, torch.Tensor)
         y = x.clone().detach()
+
         max_frames = y.size(0)
 
         sample_rate = 16000
@@ -531,6 +532,67 @@ def spec_aug(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80):
             length = random.randint(1, max_t)
             end = min(max_frames, start + length)
             y[start:end, :] = 0
+
+        sample['feat'] = y
+        yield sample
+
+
+def spec_aug(data, num_t_mask=2, num_f_mask=2, max_t=50, max_f=10, max_w=80):
+    """ Do spec augmentation
+        Inplace operation
+
+        Args:
+            data: Iterable[{key, feat, label}]
+            num_t_mask: number of time mask to apply
+            num_f_mask: number of freq mask to apply
+            max_t: max width of time mask
+            max_f: max width of freq mask
+            max_w: max width of time warp
+
+        Returns
+            Iterable[{key, feat, label}]
+    """
+    for sample in data:
+        assert 'feat' in sample
+        x = sample['feat']
+        assert 'sample_rate' in sample
+        sample_rate = sample['sample_rate']
+        assert isinstance(x, torch.Tensor)
+        y = x.clone().detach()
+        
+        hop_length = int(sample_rate * 0.01)
+        win_length = int(sample_rate * 0.025)
+        n_fft = 512
+        window = torch.hann_window(win_length)
+
+        # time mask
+        num_samples = y.size(0)
+        for i in range(num_t_mask):
+            start = random.randint(0, num_samples - 1)
+            length = random.randint(1, max_t * sample_rate)
+            end = min(num_samples, start + length)
+            y[start:end, :] = 0
+
+        min_mel_freq = to_mel(0)
+        max_mel_freq = to_mel(sample_rate // 2)
+        max_f_mel = int((max_mel_freq - min_mel_freq) / 80 * max_f)
+
+        # freq mask
+        for _ in range(num_f_mask):
+            start_mel = random.randint(int(min_mel_freq), int(max_mel_freq))
+            length_mel = random.randint(1, max_f_mel)
+            end_mel = min(max_mel_freq, start_mel + length_mel)
+            start_hz = to_hz(start_mel)
+            end_hz = to_hz(end_mel)
+
+            start_hz_ = int(start_hz * n_fft / sample_rate)
+            end_hz_ = int(end_hz * n_fft / sample_rate)
+
+            y = y.transpose(0, 1) # (num_samples, 1) -> (1, num_samples)
+            stft = torch.stft(y, n_fft, hop_length, win_length, window, return_complex=True)
+            stft[:, start_hz_:end_hz_, :] = 0
+            y = torch.istft(stft, n_fft, hop_length, win_length, window)
+            y = y.transpose(0, 1) # (1, num_samples) -> (num_samples, 1)
 
         sample['feat'] = y
         yield sample

@@ -53,7 +53,7 @@ dataset_conf:
     spec_aug_conf:
         num_t_mask: 2
         num_f_mask: 2
-        max_t: 8000
+        max_t: 0.5
         max_f: 10
     shuffle: true
     shuffle_conf:
