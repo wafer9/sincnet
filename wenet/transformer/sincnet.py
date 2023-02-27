@@ -133,16 +133,7 @@ class SincConv_fast(nn.Module):
         
 
         self.filters = (band_pass).view(self.out_channels, 1, self.kernel_size)
-        '''
-        if self.training:
-            num_f_mask = 2
-            max_f = 30
-            for i in range(num_f_mask):
-                start = random.randint(0, self.out_channels - 1)
-                length = random.randint(1, max_f)
-                end = min(self.out_channels, start + length)
-                self.filters[start:end, :, :] = 0
-        '''
+
         return F.conv1d(waveforms, self.filters, stride=self.stride,
                         padding=self.padding, dilation=self.dilation,
                          bias=None, groups=1) 
