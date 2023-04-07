@@ -95,3 +95,15 @@ Other -> 100.00 % N=3 C=0 S=3 D=0 I=0
 | ctc greedy search   avg_60  | 5.06 % N=104765 C=99583 S=5032 D=150 I=116 |
 | attention           avg_30  | 4.99 % N=104765 C=99658 S=4927 D=180 I=124 |
 | attention_rescoring avg_30  | 4.77 % N=104765 C=99858 S=4765 D=142 I=91  |
+
+## 2023.04.07
+* Feature info: using sinc feature, sincnet.required_grad = True
+* Training info: lr 0.002, batch size 16, 7 gpu, acc_grad 4, 240 epochs, num_f_mask = 2
+* add global_cmvn,  rm Concat Liner, use stft instead of bandstop-filter, sincnet kernel_size=501
+
+| decoding mode               |         CER                                |
+|-----------------------------|--------------------------------------------|
+| ctc greedy search   avg_30  | 4.91 % N=104765 C=99746 S=4898 D=121 I=129 |
+| ctc greedy search   avg_60  | 4.90 % N=104765 C=99758 S=4881 D=126 I=128 |
+| attention           avg_30  | 4.81 % N=104765 C=99831 S=4759 D=175 I=109 |
+| attention_rescoring avg_30  | 4.55 % N=104765 C=100109 S=4531 D=125 I=107|

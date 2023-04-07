@@ -264,7 +264,7 @@ Lightweight End-to-End Speech Recognition from Raw Audio Data Using
         """Construct an Conv2dSubsampling4 object."""
         super().__init__()
         self.global_cmvn = global_cmvn
-        self.sinc = SincConv_fast(out_channels=80, kernel_size=251, stride=4, sample_rate=16000)
+        self.sinc = SincConv_fast(out_channels=80, kernel_size=501, padding=250, stride=4, sample_rate=16000)
         # self.sinc = torch.nn.Conv1d(in_channels=1, out_channels=80, kernel_size=251, stride=1, padding=125)
         # self.LogCompression = LogCompression()
         # self.norm = torch.nn.BatchNorm1d(80)
